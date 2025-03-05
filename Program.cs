@@ -79,10 +79,12 @@ class Program
 
             // --- FILTER CALCULATION ---
             Console.WriteLine("\nFilter Results (Only showing days with enough historical data):");
-            // We'll start at index 49 since we need 50 days for volume filter.
-            // Note: ATR calculation needs at least 10 days (which is satisfied for i>=49).
-            for (int i = 49; i < stockHistory.Count; i++)
-            {
+            // We'll start at index 150 since we need 151 days for Simple Moving Average.
+            // Note: ATR calculation needs at least 10 days, Volume needs at least 50 days (which is satisfied for i>= 150).
+            for (int i = 150; i < stockHistory.Count; i++){
+
+                // --- FILTER CALCULATION ---
+
                 // 1. Minimum Price Filter: Close price >= $1.00.
                 bool passesMinPrice = stockHistory[i].Close >= 1.00m;
 
@@ -120,8 +122,40 @@ class Program
                 // Combine all filters.
                 bool passesFilter = passesMinPrice && passesVolumeFilter && passesAtrFilter;
 
+                // --- ENTRY CONDITION CALCULATIONS ---
+
+                // Entry Condition 1: Closed above the 150 day moving average.
+                decimal sum150 = 0;
+
+                // Sum up the closing prices for the last 150 days (today included)
+                for(int l =  i - 149; l < i; l++)
+                {
+                    sum150 += stockHistory[l].Close;
+                }
+
+                //Calculate the 150-day simple moving average.
+                decimal sma150 = sum150 / 150.0m;
+
+                //Check if the current days is above the 150 day-day moving average.
+                bool SmaEntryCondition = stockHistory[i].Close > sma150;
+
+                //Entry Condition 2: Dropped at least 12.5% in the last 3 days.
+                if (i < 3) continue;
+
+                decimal close3DaysAgo = stockHistory[i - 3].Close;
+
+                //Calculate the percentage drop over the last 3 days.
+                decimal dropPercentage = ((close3DaysAgo - stockHistory[i].Close) / close3DaysAgo) * 100;
+
+                //Calculate if the drop is at least 12.5%
+                bool dropEntryCondition = dropPercentage >= 12.5m;
+
+                bool validEntry = passesFilter && SmaEntryCondition && dropEntryCondition;
+
+
+
                 // Print out the results: Date, Close Price, 50-day Avg Volume, ATR % and overall filter pass.
-                Console.WriteLine($"{stockHistory[i].Date} - Close: {stockHistory[i].Close:F2} - 50-day Avg Vol: {avgVolume:F0} - ATR%: {atrPercentage:F2}% - Filter Pass: {passesFilter}");
+                Console.WriteLine($"{stockHistory[i].Date} - Close: {stockHistory[i].Close:F2} - Valid Trade Entry? {validEntry}");
             }
         }
         catch (Exception ex)
