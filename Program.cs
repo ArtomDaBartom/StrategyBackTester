@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 // Class to hold the stock data for each trading day.
 class StockData
@@ -31,12 +32,59 @@ class StockData
     }
 }
 
+
+//Class for trades
+class Trade
+{
+    // The date when the trade was entered.
+    public string EntryDate { get; set; }
+
+    // The price at which the trade was entered.
+    public decimal EntryPrice { get; set; }
+
+    // The date when the trade was closed.
+    public string ExitDate { get; set; }
+
+    // The price at which the trade was closed.
+    public decimal ExitPrice { get; set; }
+
+    // The trade's return expressed as a percentage, calculated upon trade close.
+    public decimal TradeReturnPercentage { get; private set; }
+
+    // A convenience property that tells us if this trade was profitable.
+    public bool IsWinningTrade => TradeReturnPercentage > 0;
+
+    // The profit or loss of the trade assuming only one trade is bought.
+    public decimal ProfitLoss { get; private set; }
+
+    // Constructor: Initializes a new trade with entry date and entry price.
+    public Trade(string entryDate, decimal entryPrice)
+    {
+        EntryDate = entryDate;
+        EntryPrice = entryPrice;
+    }
+
+    // Close the trade by providing the exit date and exit price.
+    public void CloseTrade(string exitDate, decimal exitPrice)
+    {
+        ExitDate = exitDate;
+        ExitPrice = exitPrice;
+        // Calculate the return percentage as: ((ExitPrice - EntryPrice) / EntryPrice) * 100.
+        TradeReturnPercentage = ((exitPrice - EntryPrice) / EntryPrice) * 100;
+
+        //Calculate the proft or loss.
+        ProfitLoss = ExitPrice - EntryPrice;
+    }
+}
+
+
 class Program
 {
     static async Task Main(string[] args)
     {
         // Prompt the user for the stock symbol.
         Console.Write("Enter stock symbol: ");
+        List<Trade> trades = null;
         string symbol = Console.ReadLine()?.Trim().ToUpper();
         string apiKey = "IL34F8GFHFQ1ZK8G";
 
@@ -77,6 +125,9 @@ class Program
             // Reverse the list so that the earliest date is first.
             stockHistory.Reverse();
 
+            // List to store trades.
+            trades = new List<Trade>();
+
             // --- FILTER CALCULATION ---
             Console.WriteLine("\nFilter Results (Only showing days with enough historical data):");
             // We'll start at index 150 since we need 151 days for Simple Moving Average.
@@ -101,7 +152,7 @@ class Program
                 // ATR requires the true range for each day:
                 // TrueRange = max( (High - Low), |High - Previous Close|, |Low - Previous Close| )
                 decimal atrSum = 0;
-                int count = 0;
+                int countATR = 0;
                 // Loop over the last 10 days.
                 for (int k = i - 9; k <= i; k++)
                 {
@@ -112,9 +163,9 @@ class Program
                     decimal lowPrevClose = Math.Abs(stockHistory[k].Low - stockHistory[k - 1].Close);
                     decimal trueRange = Math.Max(highLow, Math.Max(highPrevClose, lowPrevClose));
                     atrSum += trueRange;
-                    count++;
+                    countATR++;
                 }
-                decimal atr = atrSum / count;
+                decimal atr = atrSum / countATR;
                 // ATR percentage = (ATR / current day's close) * 100.
                 decimal atrPercentage = (atr / stockHistory[i].Close) * 100;
                 bool passesAtrFilter = atrPercentage >= 5.0m;
@@ -156,11 +207,120 @@ class Program
 
                 // Print out the results: Date, Close Price, 50-day Avg Volume, ATR % and overall filter pass.
                 Console.WriteLine($"{stockHistory[i].Date} - Close: {stockHistory[i].Close:F2} - Valid Trade Entry? {validEntry}");
+
+                // If there is a valid entry point, attempt initiate a trade. 
+                if (validEntry)
+                {
+                    //Calculate the limit order price and determine whether we hit it or not.
+                    decimal limitOrderPrice = stockHistory[i - 1].Close * 0.93m;
+                    bool limitOrderHit = stockHistory[i].Low <= limitOrderPrice;
+
+                    //If we hit the limit order, vamos.
+                    if (limitOrderHit)
+                    {
+                        decimal executionPrice = limitOrderPrice;
+
+                        //Open a new trade.
+                        Trade trade = new Trade(stockHistory[i].Date, executionPrice);
+                        
+
+                        int dayOfExit = -1;
+
+                        //Loop through subsequent days to determine when the trade will be closed.
+                        for(int x = i + 1; x < stockHistory.Count; x++)
+                        {
+                            //Check for exit conditions on each day.
+
+                            //Exit Condition 1 -- Stop Loss: 2.5x ATR below execution price.
+
+                            //Calculate ATR for day x
+                            decimal atrSumClose = 0;
+                            int countATRClose = 0;
+                            for (int k = x - 9; k <= x; k++)
+                            {
+                                decimal highLow = stockHistory[k].High - stockHistory[k].Low;
+                                decimal highPrevClose = Math.Abs(stockHistory[k].High - stockHistory[k - 1].Close);
+                                decimal lowPrevClose = Math.Abs(stockHistory[k].Low - stockHistory[k - 1].Close);
+                                decimal trueRange = Math.Max(highLow, Math.Max(highPrevClose, lowPrevClose));
+                                atrSumClose += trueRange;
+                                countATRClose++;
+                            }
+                            decimal atrClose = atrSumClose / countATRClose;
+
+                            //Calculate our stop loss level. 
+                            decimal stopLoss = executionPrice - 2.5m * atrClose;
+
+                            if (stockHistory[x].Close <= stopLoss)
+                            {
+                                dayOfExit = x;
+                                break; // Exit the trade on day x (stopped out)
+                            }
+
+                            //Exit Condition 2 -- Profit Target: 4% or more profit.
+                            if (stockHistory[x].Close >= executionPrice * 1.04m && stockHistory.Count > x + 1)
+                            {
+                                dayOfExit = x + 1;
+                                break;
+                            }
+
+                            //Exit Condition 3 -- Time Out: 3 days without trigger conditions 1 & 2.
+                            if( x - i + 1 == 3 && stockHistory.Count > x + 1)
+                            {
+                                dayOfExit = x + 1;
+                                break;
+                            }
+                        } //exit the simulatinon loop
+
+                        //If we found a valid exit condition, exit the trade.
+                        if(dayOfExit != -1)
+                        {
+                            trade.CloseTrade(stockHistory[dayOfExit].Date, stockHistory[dayOfExit].Close);
+                            trades.Add(trade);
+                        }
+
+                    }
+                } //end simulation loop, continue checking the next day
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
+        }
+
+        //Calculate final metrics if we haev any trades
+        if(trades != null)
+        {
+
+            //Calculate total trades.
+            int totalTrades = trades.Count;
+
+            //Calculate win rate.
+            int winningTrades = trades.Count(t => t.IsWinningTrade);
+            decimal winRate = totalTrades > 0 ? (decimal)winningTrades / totalTrades * 100 : 0;
+
+            //Calculate Net % Gain/Loss
+            decimal netPercent = trades.Sum(t => t.TradeReturnPercentage);
+
+            //Calculate Average Win vs. Loss Ratio
+            decimal avgWin = trades.Where(t => t.TradeReturnPercentage > 0)
+                .Select(t => t.TradeReturnPercentage)
+                .DefaultIfEmpty(0)
+                .Average();
+            decimal avgLoss = trades.Where(t => t.TradeReturnPercentage < 0)
+                .Select(t => t.TradeReturnPercentage)
+                .DefaultIfEmpty(0)
+                .Average();
+
+            decimal avgWinLossRatio = Math.Abs(avgLoss) > 0 ? avgWin / Math.Abs(avgLoss) : 0;
+
+            Console.WriteLine("----- Trade Metrics -----");
+            Console.WriteLine($"Total Trades: {totalTrades}");
+            Console.WriteLine($"Win Rate: {winRate:F2}%");
+            Console.WriteLine($"Net % Gain/Loss (non-compounded): {netPercent:F2}%");
+            Console.WriteLine($"Average Win vs. Average Loss Ratio: {avgWinLossRatio:F2}");
+            Console.WriteLine("-------------------------");
+
+
         }
     }
 }
