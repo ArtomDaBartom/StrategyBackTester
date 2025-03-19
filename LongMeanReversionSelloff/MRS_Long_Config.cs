@@ -13,7 +13,7 @@
     public const int drop_percentage_days = 3;
 
     // Execution Settings
-    public const decimal limit_order_target = 0.93m; // Limit order 7% below previous close
+    public const decimal limit_order_discount = 0.93m; // Limit order 7% below previous close
 
     // Exit Conditions
     public const decimal atr_stopLoss_multiplier = 2.5m; // ATR stop loss multiplier

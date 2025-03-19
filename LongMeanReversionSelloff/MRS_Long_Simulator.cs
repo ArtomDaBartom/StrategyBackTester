@@ -52,7 +52,7 @@ public static class MRSelloffLongSimulator
                 // Limit order: Attempt to buy 7% below the previous day's close
                 if (i > 0)
                 {
-                    decimal limitOrderPrice = stockHistory[i - 1].Close * MRS_Long_Config.limit_order_target;
+                    decimal limitOrderPrice = stockHistory[i - 1].Close * MRS_Long_Config.limit_order_discount;
                     bool limitOrderHit = stockHistory[i].Low <= limitOrderPrice;
 
                     if (limitOrderHit)
@@ -71,7 +71,7 @@ public static class MRSelloffLongSimulator
                             if (stockHistory[j].Close <= stopLoss)
                             {
                                 dayOfExit = j;
-                                break; // Exit immediately if stop loss is hit
+                                break; // Exit immediately if exit condition met
                             }
 
                             // Exit Condition 2: Profit Target - 4% gain, exit next day at close

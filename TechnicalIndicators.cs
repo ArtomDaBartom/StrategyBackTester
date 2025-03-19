@@ -23,7 +23,7 @@ public static class TechnicalIndicators
 
     public static decimal CalculateATR(List<StockData> stockHistory, int currentIndex, int period, ref decimal prevSum)
     {
-        if (currentIndex < period) return 0; //Not enough daya to calculate ATR
+        if (currentIndex < period) return 0; //Not enough data to calculate ATR
 
         // Step 1: Calculate the True Range (TR) for the current day
         decimal highLow = stockHistory[currentIndex].High - stockHistory[currentIndex].Low;
