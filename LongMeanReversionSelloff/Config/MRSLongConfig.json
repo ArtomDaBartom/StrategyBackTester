@@ -1,0 +1,16 @@
+﻿{
+  "SmaPeriod": 150,
+  "AtrPeriod": 10,
+  "AvgVolumePeriod": 50,
+  "DropPercentageDays": 3,
+
+  "MinPrice": 1.00,
+  "MinAvgVolume": 1000000,
+  "AtrTargetPercentage": 5.0,
+  "DropPercentagePreReq": -12.5,
+
+  "LimitOrderDiscount": 0.93,
+  "AtrStopLossMultiplier": 2.5,
+  "ProfitTarget": 1.04,
+  "TimeoutDuration": 3
+}

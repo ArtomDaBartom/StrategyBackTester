@@ -8,6 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="LongMeanReversionSelloff\Config\TextFile1.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="LongMeanReversionSelloff\Config\MRSLongConfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="YahooFinanceApi" Version="2.3.3" />
   </ItemGroup>
 
