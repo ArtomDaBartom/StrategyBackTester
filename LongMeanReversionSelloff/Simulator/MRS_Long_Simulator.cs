@@ -26,23 +26,29 @@ public class MRSLongSimulator
 
             var indicators = indicatorMap[day.Date];
 
+            var sma = indicators.Get("SMA");
+            var atr = indicators.Get("ATR");
+            var volume = indicators.Get("AvgVolume");
+            var percentChange = indicators.Get("PercentChange");
+
+
             // --- FILTER CONDITIONS ---
 
             bool passesMinPrice = day.Close >= _config.MinPrice;
 
-            bool passesVolume = indicators.AvgVolume.HasValue && indicators.AvgVolume >= _config.MinAvgVolume;
+            bool passesVolume = volume.HasValue && volume >= _config.MinAvgVolume;
 
-            bool passesATR = indicators.Atr.HasValue && ((indicators.Atr.Value / day.Close) * 100 >= _config.AtrTargetPercentage);
+            bool passesATR = atr.HasValue && ((atr / day.Close) * 100 >= _config.AtrTargetPercentage);
 
             bool passesFilter = passesMinPrice && passesVolume && passesATR;
 
             // --- ENTRY CONDITIONS ---
 
-            bool aboveSMA = indicators.Sma.HasValue &&
-                            day.Close > indicators.Sma.Value;
+            bool aboveSMA = sma.HasValue &&
+                            day.Close > sma;
 
-            bool dropCondition = indicators.DropPercentX.HasValue &&
-                                 indicators.DropPercentX.Value <= _config.DropPercentagePreReq;
+            bool dropCondition = percentChange.HasValue &&
+                                 percentChange <= _config.DropPercentagePreReq;
 
             bool validEntry = passesFilter && aboveSMA && dropCondition;
 
@@ -64,10 +70,9 @@ public class MRSLongSimulator
                     for (int j = i + 1; j < stockHistory.Count; j++)
                     {
                         var futureDay = stockHistory[j];
-                        
-                        var futureATR = indicatorMap.ContainsKey(futureDay.Date) &&
-                                        indicatorMap[futureDay.Date].Atr.HasValue ? indicatorMap[futureDay.Date].Atr.Value : 0;
+                        var futureIndicators = indicatorMap.ContainsKey(futureDay.Date) ? indicatorMap[futureDay.Date] : null;
 
+                        decimal futureATR = futureIndicators?.Get("ATR") ?? 0;
                         decimal stopLoss = executionPrice - _config.AtrStopLossMultiplier * futureATR;
                         
                         // Exit Condition 1: Stop Loss is hit.

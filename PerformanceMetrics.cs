@@ -12,12 +12,7 @@ public class PerformanceMetrics
 
     public PerformanceMetrics(List<Trade> trades)
     {
-        _executedTrades = trades;
-    }
-
-    public void Calculate()
-    {
-        TotalTrades = _executedTrades.Count;
+        TotalTrades = trades.Count;
 
         if (TotalTrades == 0)
         {
@@ -25,15 +20,15 @@ public class PerformanceMetrics
             return;
         }
 
-        int winningTrades = _executedTrades.Count(t => t.IsWinningTrade);
+        int winningTrades = trades.Count(t => t.IsWinningTrade);
         WinRate = TotalTrades > 0 ? (decimal)winningTrades / TotalTrades * 100 : 0;
-        NetPercent = _executedTrades.Sum(t => t.TradeReturnPercentage);
+        NetPercent = trades.Sum(t => t.TradeReturnPercentage);
 
-        decimal avgWin = _executedTrades.Where(t => t.TradeReturnPercentage > 0)
+        decimal avgWin = trades.Where(t => t.TradeReturnPercentage > 0)
             .Select(t => t.TradeReturnPercentage)
             .DefaultIfEmpty(0)
             .Average();
-        decimal avgLoss = _executedTrades.Where(t => t.TradeReturnPercentage < 0)
+        decimal avgLoss =  trades.Where(t => t.TradeReturnPercentage < 0)
             .Select(t => t.TradeReturnPercentage)
             .DefaultIfEmpty(0)
             .Average();

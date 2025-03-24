@@ -24,22 +24,19 @@ class Program
             return;
         }
 
-        // Precalculate indicators
-        var precalculator = new IndicatorPrecalculator(
-            config.SmaPeriod,
-            config.AtrPeriod,
-            config.AvgVolumePeriod,
-            config.DropPercentageDays
-        );
+        // Build indicator list using factory
+        var indicators = IndicatorBuilder.Build(config);
+
+        // Precalculate indicator values
+        var precalculator = new IndicatorPrecalculator(indicators);
         var indicatorMap = precalculator.Precalculate(stockHistory);
 
         // Run simulation
         var simulator = new MRSLongSimulator(config);
         var trades = simulator.Run(stockHistory, indicatorMap);
 
-        // Output results
+        // Display performance
         var metrics = new PerformanceMetrics(trades);
-        metrics.Calculate();
         metrics.Print();
 
     }
