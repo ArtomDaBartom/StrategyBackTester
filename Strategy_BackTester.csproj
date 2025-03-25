@@ -8,11 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="LongMeanReversionSelloff\Config\TextFile1.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="LongMeanReversionSelloff\Config\MRSLongConfig.json">
+    <Content Include="Strategies\LongMeanReversionSelloff\MRSLongConfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

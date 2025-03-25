@@ -15,6 +15,5 @@
     public decimal ProfitTarget { get; set; }
     public int TimeoutDuration { get; set; }
 
-    public List<string> Indicators { get; set; }
 
 }

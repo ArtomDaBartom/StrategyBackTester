@@ -68,21 +68,22 @@ public class IndicatorPrecalculator
 
 public static class IndicatorBuilder
 {
-    public static List<Indicator> Build(MRSLongConfig config)
+    public static List<Indicator> Build(MRSLongConfig config, List<string> required)
     {
         var indicators = new List<Indicator>();
 
-        if (config.Indicators.Contains("SMA"))
+        if (required.Contains("SMA"))
             indicators.Add(new SMAIndicator(config.SmaPeriod));
 
-        if (config.Indicators.Contains("ATR"))
+        if (required.Contains("ATR"))
             indicators.Add(new ATRIndicator(config.AtrPeriod));
 
-        if (config.Indicators.Contains("AvgVolume"))
+        if (required.Contains("AvgVolume"))
             indicators.Add(new AvgVolumeIndicator(config.AvgVolumePeriod));
 
-        if (config.Indicators.Contains("PercentChange"))
+        if (required.Contains("PercentChange"))
             indicators.Add(new PercentChangeIndicator(config.DropPercentageDays));
+
 
         return indicators;
     }

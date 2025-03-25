@@ -8,14 +8,16 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // Load Config from JSON
-        var configJson = File.ReadAllText("LongMeanReversionSelloff/Config/MRSLongConfig.json");
+        // Load config
+        var configJson = File.ReadAllText("Strategies/LongMeanReversionSelloff/MRSLongConfig.json");
         var config = JsonSerializer.Deserialize<MRSLongConfig>(configJson);
+        // Choose strategy
+        Strategy strategy = new MRSLongStrategy();
 
-        // Fetch Stock Data
+        // Fetch stock data
         Console.Write("Enter stock symbol: ");
         string symbol = Console.ReadLine()?.Trim().ToUpper();
-        string apiKey = "RK2UVVTZ2625NQY4"; 
+        string apiKey = "RK2UVVTZ2625NQY4";
         var stockHistory = await StockDataFetcher.FetchAndParseStockDataAsync(symbol, apiKey);
 
         if (stockHistory.Count == 0)
@@ -24,21 +26,20 @@ class Program
             return;
         }
 
-        // Build indicator list using factory
-        var indicators = IndicatorBuilder.Build(config);
+        // Build only required indicators
+        var indicators = IndicatorBuilder.Build(config, strategy.RequiredIndicators);
 
-        // Precalculate indicator values
+        // Precompute indicators
         var precalculator = new IndicatorPrecalculator(indicators);
         var indicatorMap = precalculator.Precalculate(stockHistory);
 
         // Run simulation
-        var simulator = new MRSLongSimulator(config);
+        var simulator = new Simulator(strategy, config);
         var trades = simulator.Run(stockHistory, indicatorMap);
 
-        // Display performance
+        // Display results
         var metrics = new PerformanceMetrics(trades);
         metrics.Print();
-
     }
 }
 
