@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class MRSLongStrategy : Strategy
+public class MRSLongStrategy : Strategy<MRSLongConfig>
 {
     public string Name => "MRS Long";
 
@@ -15,11 +15,8 @@ public class MRSLongStrategy : Strategy
 
     public TradeDirection Direction => TradeDirection.Long;
 
-    public bool ShouldEnter(int index, List<TradingDay> history, IndicatorSnapshot indicators, object config)
+    public bool ShouldEnter(int index, List<TradingDay> history, IndicatorSnapshot indicators, MRSLongConfig config)
     {
-
-        if (config is not MRSLongConfig cfg)
-            throw new ArgumentException("Invalid config type passed to MRSLongStrategy.");
 
         var day = history[index];
 
@@ -28,31 +25,28 @@ public class MRSLongStrategy : Strategy
         var volume = indicators.Get("AvgVolume");
         var drop = indicators.Get("PercentChange");
 
-        bool passesMinPrice = day.Close >= cfg.MinPrice;
-        bool passesVolume = volume.HasValue && volume >= cfg.MinAvgVolume;
-        bool passesATR = atr.HasValue && ((atr.Value / day.Close) * 100 >= cfg.AtrTargetPercentage);
+        bool passesMinPrice = day.Close >= config.MinPrice;
+        bool passesVolume = volume.HasValue && volume >= config.MinAvgVolume;
+        bool passesATR = atr.HasValue && ((atr.Value / day.Close) * 100 >= config.AtrTargetPercentage);
         bool passesFilter = passesMinPrice && passesVolume && passesATR;
 
         bool aboveSMA = sma.HasValue && day.Close > sma.Value;
-        bool dropCondition = drop.HasValue && drop.Value <= cfg.DropPercentagePreReq;
+        bool dropCondition = drop.HasValue && drop.Value <= config.DropPercentagePreReq;
 
         return passesFilter && aboveSMA && dropCondition;
     }
 
 
-    public bool TryGetEntryPrice(int index, List<TradingDay> history, object config, out decimal entryPrice)
+    public bool TryGetEntryPrice(int index, List<TradingDay> history, MRSLongConfig config, out decimal entryPrice)
     {
         entryPrice = 0;
-
-        if (config is not MRSLongConfig cfg)
-            throw new ArgumentException("Invalid config type passed to MRSLongStrategy.");
 
         if (index == 0) return false; // No previous day
 
         var day = history[index];
         var prevDay = history[index - 1];
 
-        decimal limitPrice = prevDay.Close * cfg.LimitOrderDiscount;
+        decimal limitPrice = prevDay.Close * config.LimitOrderDiscount;
 
         if (day.Low <= limitPrice)
         {
@@ -64,10 +58,8 @@ public class MRSLongStrategy : Strategy
     }
 
 
-    public bool ShouldExit(int entryIndex, int currentIndex, List<TradingDay> history, Dictionary<DateTime, IndicatorSnapshot> indicatorMap, object config, decimal entryPrice)
+    public bool ShouldExit(int entryIndex, int currentIndex, List<TradingDay> history, Dictionary<DateTime, IndicatorSnapshot> indicatorMap, MRSLongConfig config, decimal entryPrice)
     {
-        if (config is not MRSLongConfig cfg)
-            throw new ArgumentException("Invalid config type passed to MRSLongStrategy.");
 
         var day = history[currentIndex];
         var indicators = indicatorMap.ContainsKey(day.Date) ? indicatorMap[day.Date] : null;
@@ -76,11 +68,11 @@ public class MRSLongStrategy : Strategy
             return false;
 
         var atr = indicators.Get("ATR") ?? 0;
-        decimal stopLoss = entryPrice - cfg.AtrStopLossMultiplier * atr;
+        decimal stopLoss = entryPrice - config.AtrStopLossMultiplier * atr;
 
         bool hitStopLoss = day.Close <= stopLoss;
-        bool hitProfitTarget = day.Close >= entryPrice * cfg.ProfitTarget;
-        bool timeoutExit = (currentIndex - entryIndex + 1) == cfg.TimeoutDuration;
+        bool hitProfitTarget = day.Close >= entryPrice * config.ProfitTarget;
+        bool timeoutExit = (currentIndex - entryIndex + 1) == config.TimeoutDuration;
 
         return hitStopLoss || hitProfitTarget || timeoutExit;
     }

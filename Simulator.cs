@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class Simulator
+public class Simulator<TConfig>
 {
-    private readonly Strategy _strategy;
-    private readonly object _config;
+    private readonly Strategy<TConfig> _strategy;
+    private readonly TConfig _config;
 
-    public Simulator(Strategy strategy, object config)
+    public Simulator(Strategy<TConfig> strategy, TConfig config)
     {
         _strategy = strategy;
         _config = config;

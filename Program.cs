@@ -12,7 +12,7 @@ class Program
         var configJson = File.ReadAllText("Strategies/LongMeanReversionSelloff/MRSLongConfig.json");
         var config = JsonSerializer.Deserialize<MRSLongConfig>(configJson);
         // Choose strategy
-        Strategy strategy = new MRSLongStrategy();
+        var strategy = new MRSLongStrategy();
 
         // Fetch stock data
         Console.Write("Enter stock symbol: ");
@@ -34,7 +34,7 @@ class Program
         var indicatorMap = precalculator.Precalculate(stockHistory);
 
         // Run simulation
-        var simulator = new Simulator(strategy, config);
+        var simulator = new Simulator<MRSLongConfig>(strategy, config);
         var trades = simulator.Run(stockHistory, indicatorMap);
 
         // Display results
